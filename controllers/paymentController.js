@@ -62,7 +62,7 @@ const initiatePayment = async (req, res) => {
             paymentFlow: {
                 type: "PG_CHECKOUT",
                 message: "Purchase Microlearning Guide",
-                merchantUrl: `${frontendUrl}/payment/success?transactionId=${merchantOrderId}&courseId=${courseId}` // Also added your success route!
+                merchantUrl: `${frontendUrl}/payment/success?transactionId=${merchantOrderId}&courseId=${courseId}`
             }
         }
 

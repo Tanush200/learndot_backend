@@ -3,19 +3,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
+dotenv.config();
 
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const videoRoutes = require('./routes/videoRoutes')
-
-
-
-
-
-dotenv.config();
-
 const connectDB = async () => {
     try {
         if (!process.env.MONGO_URI) {
@@ -32,7 +26,15 @@ const connectDB = async () => {
 
 const app = express();
 
-app.use(cors());
+app.use(
+    cors({
+        origin:
+            process.env.NODE_ENV === "production"
+                ? ["https://engine-board-frontend.vercel.app"]
+                : ["http://localhost:3000"],
+        credentials: true,
+    })
+);
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
