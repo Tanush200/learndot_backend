@@ -54,13 +54,15 @@ const initiatePayment = async (req, res) => {
             status: 'PENDING'
         });
 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
         const payload = {
             merchantOrderId: merchantOrderId,
             amount: amount * 100,
             paymentFlow: {
                 type: "PG_CHECKOUT",
                 message: "Purchase Microlearning Guide",
-                merchantUrl: `http://localhost:3000/status/${merchantOrderId}`
+                merchantUrl: `${frontendUrl}/payment/success?transactionId=${merchantOrderId}&courseId=${courseId}` // Also added your success route!
             }
         }
 
