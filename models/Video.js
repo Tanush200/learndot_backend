@@ -25,6 +25,14 @@ const videoSchema = new mongoose.Schema({
     sequenceId: {
         type: Number,
         required: true
+    },
+    views: {
+        type: Number,
+        default: 0
+    },
+    completions: {
+        type: Number,
+        default: 0
     }
 
 }, { timestamps: true })

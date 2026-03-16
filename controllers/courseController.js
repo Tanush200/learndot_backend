@@ -1,9 +1,12 @@
 const Course = require("../models/Course")
 const Video = require("../models/Video")
+const User = require("../models/User")
 
 const getAllCourses = async (req, res) => {
     try {
-        const courses = await Course.find({ status: 'PUBLISHED' }).populate('creator', 'name');
+        const courses = await Course.find({ status: 'PUBLISHED' })
+            .populate('creator', 'name')
+            .sort({ createdAt: -1 });
         res.json(courses);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.messafe });
@@ -219,60 +222,6 @@ const getPurchasedCourses = async (req, res) => {
 }
 
 
-// const getNewestFreeVideos = async (req, res) => {
-//     try {
-//         const page = parseInt(req.query.page) || 1;
-//         const limit = parseInt(req.query.limit) || 10;
-
-//         const skip = (page - 1) * limit;
-
-//         const newestVideosFeed = await Video.aggregate([
-//             { $match: { isFree: true } },
-//             {
-//                 $lookup: {
-//                     from: 'courses',
-//                     localField: 'courseId',
-//                     foreignField: '_id',
-//                     as: 'courseInfo'
-//                 }
-//             },
-//             { $unwind: "$courseInfo" },
-//             { $match: { "courseInfo.status": 'PUBLISHED' } },
-//             {
-//                 $lookup: {
-//                     from: 'users',
-//                     localField: 'courseInfo.creator',
-//                     foreignField: '_id',
-//                     as: 'creatorInfo'
-//                 }
-//             },
-//             { $unwind: { path: "$creatorInfo", preserveNullAndEmptyArrays: true } },
-//             {
-//                 $addFields: {
-//                     "courseInfo.creator": {
-//                         _id: "$creatorInfo._id",
-//                         name: "$creatorInfo.name"
-//                     }
-//                 }
-//             },
-//             { $sort: { createdAt: -1 } },
-//             { $skip: skip },
-//             { $limit: limit },
-//             { $project: { creatorInfo: 0 } }
-//         ]);
-
-//         const totalVideos = await Video.countDocuments({ isFree: true });
-
-//         res.json({
-//             videos: newestVideosFeed,
-//             currentPage: page,
-//             totalPages: Math.ceil(totalVideos / limit),
-//             hasMore: page * limit < totalVideos
-//         })
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server Error', error: error.message });
-//     }
-// }
 
 const getNewestFreeVideos = async (req, res) => {
     try {
@@ -369,6 +318,52 @@ const getAdminAllCourses = async (req, res) => {
 }
 
 
+const getCreatorAnalytics = async (req, res) => {
+    try {
+        if (req.user.role !== 'creator') {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
+        const courses = await Course.find({ creator: req.user._id }).select('_id')
+        const courseIds = courses.map(c => c._id);
+
+        if (courseIds.length === 0) {
+            return res.json({ totalStudents: 0, totalViews: 0, completionRate: 0 });
+        }
+
+        const totalStudents = await User.countDocuments({
+            purchasedCourses: { $in: courseIds }
+        })
+
+        const videoViews = await Video.find({ courseId: { $in: courseIds } }).select('views completions')
+
+
+        let totalViews = 0;
+        let totalCompletions = 0;
+
+        videoViews.forEach(video => {
+            totalViews += (video.views || 0);
+            totalCompletions += (video.completions || 0);
+
+        });
+
+        let completionRate = 0;
+        if (totalViews > 0) {
+            completionRate = Math.round((totalCompletions / totalViews) * 100);
+        }
+
+        res.json({
+            totalStudents,
+            totalViews,
+            completionRate
+        })
+    } catch (error) {
+        console.error("Analytics Error:", error);
+        res.status(500).json({ message: 'Server Error loading analytics' });
+    }
+}
+
+
 
 
 module.exports = {
@@ -383,5 +378,6 @@ module.exports = {
     getPurchasedCourses,
     getNewestFreeVideos,
     getMyCourse,
-    getAdminAllCourses
+    getAdminAllCourses,
+    getCreatorAnalytics
 }

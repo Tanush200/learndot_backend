@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getAllCourses, getCourseById, createCourse, updateCourse, addVideoToCourse, submitCourseForReview, adminCourseApproval, adminGrantCourseAccess, getPurchasedCourses, getNewestFreeVideos, getMyCourse, getAdminAllCourses } = require("../controllers/courseController");
+const { getAllCourses, getCourseById, createCourse, updateCourse, addVideoToCourse, submitCourseForReview, adminCourseApproval, adminGrantCourseAccess, getPurchasedCourses, getNewestFreeVideos, getMyCourse, getAdminAllCourses, getCreatorAnalytics } = require("../controllers/courseController");
 const { protect } = require('../middleware/authMiddleware');
 
 router.get('/', getAllCourses);
@@ -10,6 +10,7 @@ router.post('/', protect, createCourse);
 router.get('/creator/my-course', protect, getMyCourse);
 router.get('/admin/all', protect, getAdminAllCourses);
 router.get('/purchased', protect, getPurchasedCourses);
+router.get('/creator/analytics', protect, getCreatorAnalytics)
 
 // Dynamic ID routes must go last
 router.get('/:id', getCourseById);

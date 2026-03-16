@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Video = require('../models/Video')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -125,6 +126,8 @@ const markVideoCompleted = async (req, res) => {
         if (!user.completedVideos.includes(videoId)) {
             user.completedVideos.push(videoId);
             await user.save();
+
+            await Video.findByIdAndUpdate(videoId, { $inc: { completions: 1 } })
         }
 
         res.json({ message: 'Progress updated', completedVideos: user.completedVideos });
