@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
     purchasedCourses: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
+    }],
+    completedVideos: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Video'
     }]
 }, { timestamps: true });
 

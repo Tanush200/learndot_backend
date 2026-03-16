@@ -113,10 +113,31 @@ const getMe = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 }
+
+const markVideoCompleted = async (req, res) => {
+    try {
+        const { videoId } = req.body;
+        if (!videoId) return res.status(400).json({ message: 'Video ID is required' });
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (!user.completedVideos.includes(videoId)) {
+            user.completedVideos.push(videoId);
+            await user.save();
+        }
+
+        res.json({ message: 'Progress updated', completedVideos: user.completedVideos });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     approveCreator,
     getPendingCreators,
-    getMe
+    getMe,
+    markVideoCompleted
 };
