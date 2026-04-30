@@ -23,7 +23,6 @@ const getCourseById = async (req, res) => {
 
         const videos = await Video.find({ courseId: course._id }).sort({ sequenceId: 1 }).select('-__v');
 
-        // Check if user has access (Admin or Purchased)
         let hasAccess = false;
         const token = req.cookies.token;
 
@@ -39,11 +38,9 @@ const getCourseById = async (req, res) => {
                     }
                 }
             } catch (err) {
-                // Invalid token, treat as guest
             }
         }
 
-        // Filter video URLs for locked content
         const secureVideos = videos.map(v => {
             const videoObj = v.toObject();
             if (!videoObj.isFree && !hasAccess) {
@@ -84,7 +81,6 @@ const createCourse = async (req, res) => {
     }
 }
 
-// Update course thumbnail (or other fields) for existing courses
 const updateCourse = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id);
@@ -144,7 +140,6 @@ const addVideoToCourse = async (req, res) => {
 
 
 
-// Redundant review logic removed as admins upload directly
 
 const adminGrantCourseAccess = async (req, res) => {
     try {

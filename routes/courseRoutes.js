@@ -7,14 +7,12 @@ router.get('/', getAllCourses);
 router.get('/feed/newest', getNewestFreeVideos);
 router.get('/purchased', protect, getPurchasedCourses);
 
-// Admin only routes
 router.post('/', protect, admin, createCourse);
 router.get('/admin/my-courses', protect, admin, getMyCourse);
 router.get('/admin/all', protect, admin, getAdminAllCourses);
 router.get('/admin/analytics', protect, admin, getCreatorAnalytics)
 router.put("/admin/:id/grant-access", protect, admin, adminGrantCourseAccess)
 
-// Dynamic ID routes
 router.get('/:id', getCourseById);
 router.post('/:id/videos', protect, admin, addVideoToCourse)
 router.put("/:id", protect, admin, updateCourse);
