@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, approveCreator, getPendingCreators, getMe, markVideoCompleted } = require('../controllers/authController');
+const { registerUser, loginUser, approveCreator, getPendingCreators, getMe, markVideoCompleted, logoutUser } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+router.post('/logout', logoutUser);
 
 router.put("/approve/:id", protect, approveCreator)
 router.get('/creators/pending', protect, getPendingCreators)

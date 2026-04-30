@@ -19,14 +19,42 @@ const getAllCourses = async (req, res) => {
 const getCourseById = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id).populate('creator', 'name');
-        if (course) {
-            const videos = await Video.find({ courseId: course._id }).sort({ sequenceId: 1 }).select('-__v');
-            res.json({ course, videos })
-        } else {
-            res.status(404).json({ message: 'Course not found' })
+        if (!course) return res.status(404).json({ message: 'Course not found' });
+
+        const videos = await Video.find({ courseId: course._id }).sort({ sequenceId: 1 }).select('-__v');
+
+        // Check if user has access (Admin or Purchased)
+        let hasAccess = false;
+        const token = req.cookies.token;
+
+        if (token) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const user = await User.findById(decoded.id);
+                if (user) {
+                    const isPurchased = user.purchasedCourses.some(id => id.toString() === course._id.toString());
+                    if (user.role === 'admin' || isPurchased) {
+                        hasAccess = true;
+                    }
+                }
+            } catch (err) {
+                // Invalid token, treat as guest
+            }
         }
+
+        // Filter video URLs for locked content
+        const secureVideos = videos.map(v => {
+            const videoObj = v.toObject();
+            if (!videoObj.isFree && !hasAccess) {
+                delete videoObj.videoUrl;
+            }
+            return videoObj;
+        });
+
+        res.json({ course, videos: secureVideos });
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message })
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 }
 
@@ -61,14 +89,15 @@ const updateCourse = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id);
         if (!course) return res.status(404).json({ message: 'Course not found' });
-        if (course.creator.toString() !== req.user._id.toString())
+        if (course.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin')
             return res.status(403).json({ message: 'Unauthorized' });
 
-        const { thumbnailUrl, title, description, price } = req.body;
+        const { thumbnailUrl, title, description, price, status } = req.body;
         if (thumbnailUrl !== undefined) course.thumbnailUrl = thumbnailUrl;
         if (title) course.title = title;
         if (description) course.description = description;
         if (price) course.price = price;
+        if (status) course.status = status;
 
         await course.save();
         res.json(course);
@@ -115,56 +144,7 @@ const addVideoToCourse = async (req, res) => {
 
 
 
-const submitCourseForReview = async (req, res) => {
-    try {
-        const course = await Course.findById(req.params.id);
-
-        if (!course) {
-            return res.status(404).json({ message: 'Course not found' });
-        }
-
-        if (course.creator.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Not authorized to publish this course' });
-        }
-
-
-        course.status = 'IN_REVIEW';
-        const updatedCourse = await course.save();
-
-        res.json({ message: 'Course submitted for admin review!', course: updatedCourse });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-}
-
-
-
-const adminCourseApproval = async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Admin access required' });
-        }
-
-        const { status, rejectionReason } = req.body;
-
-        const course = await Course.findById(req.params.id);
-        if (!course) return res.status(404).json({ message: 'Course not found' });
-
-        if (status == 'REJECTED' && !rejectionReason) {
-            return res.status(400).json({ message: 'Must provide a rejection reason' });
-        }
-
-        course.status = status;
-        if (status === 'REJECTED') {
-            course.rejectionReason = rejectionReason;
-        }
-
-        const updatedCourse = await course.save();
-        res.json({ message: 'Course status updated', course: updatedCourse });
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-}
+// Redundant review logic removed as admins upload directly
 
 const adminGrantCourseAccess = async (req, res) => {
     try {
@@ -320,7 +300,7 @@ const getAdminAllCourses = async (req, res) => {
 
 const getCreatorAnalytics = async (req, res) => {
     try {
-        if (req.user.role !== 'creator') {
+        if (req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Access denied' });
         }
 
@@ -372,8 +352,6 @@ module.exports = {
     createCourse,
     updateCourse,
     addVideoToCourse,
-    submitCourseForReview,
-    adminCourseApproval,
     adminGrantCourseAccess,
     getPurchasedCourses,
     getNewestFreeVideos,

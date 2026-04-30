@@ -1,23 +1,22 @@
 const express = require("express");
 const router = express.Router();
-const { getAllCourses, getCourseById, createCourse, updateCourse, addVideoToCourse, submitCourseForReview, adminCourseApproval, adminGrantCourseAccess, getPurchasedCourses, getNewestFreeVideos, getMyCourse, getAdminAllCourses, getCreatorAnalytics } = require("../controllers/courseController");
-const { protect } = require('../middleware/authMiddleware');
+const { getAllCourses, getCourseById, createCourse, updateCourse, addVideoToCourse, adminGrantCourseAccess, getPurchasedCourses, getNewestFreeVideos, getMyCourse, getAdminAllCourses, getCreatorAnalytics } = require("../controllers/courseController");
+const { protect, admin } = require('../middleware/authMiddleware');
 
 router.get('/', getAllCourses);
 router.get('/feed/newest', getNewestFreeVideos);
-router.post('/', protect, createCourse);
-
-router.get('/creator/my-course', protect, getMyCourse);
-router.get('/admin/all', protect, getAdminAllCourses);
 router.get('/purchased', protect, getPurchasedCourses);
-router.get('/creator/analytics', protect, getCreatorAnalytics)
 
-// Dynamic ID routes must go last
+// Admin only routes
+router.post('/', protect, admin, createCourse);
+router.get('/admin/my-courses', protect, admin, getMyCourse);
+router.get('/admin/all', protect, admin, getAdminAllCourses);
+router.get('/admin/analytics', protect, admin, getCreatorAnalytics)
+router.put("/admin/:id/grant-access", protect, admin, adminGrantCourseAccess)
+
+// Dynamic ID routes
 router.get('/:id', getCourseById);
-router.post('/:id/videos', protect, addVideoToCourse)
-router.put("/:id", protect, updateCourse);
-router.put("/:id/submit", protect, submitCourseForReview);
-router.put("/admin/:id/approve", protect, adminCourseApproval)
-router.put("/admin/:id/grant-access", protect, adminGrantCourseAccess)
+router.post('/:id/videos', protect, admin, addVideoToCourse)
+router.put("/:id", protect, admin, updateCourse);
 
 module.exports = router
